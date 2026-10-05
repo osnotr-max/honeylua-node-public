@@ -1,0 +1,23 @@
+services:
+  honeylua:
+    build:
+      context: .
+    container_name: honeylua
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      STAFF_RANKING_FILE: /data/staff-ranking.json
+    volumes:
+      - honeylua-data:/data
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  honeylua-data:
+    name: honeylua-data
