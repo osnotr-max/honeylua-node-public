@@ -1,8 +1,8 @@
 # Honeylua Support — bot de tickets para Discord
 
-Versão **2.10.2** · Node.js 24 · Docker Compose · sem dependências npm em runtime.
+Versão **2.10.2** · Node.js 20+ · Docker Compose e painel Pterodactyl.
 
-Bot de suporte com tickets, transcrições e ranking da equipe. Esta versão usa as APIs nativas do Node.js para conversar com o Discord, sem `discord.js`.
+Bot de suporte com tickets, transcrições e ranking da equipe. Usa a API nativa `fetch` e um cliente WebSocket leve (`ws`), sem `discord.js`.
 
 ## Antes de subir
 
@@ -48,6 +48,18 @@ docker compose logs -f --tail=100
 
 O Compose mantém o ranking em um volume Docker (`honeylua-data`), reinicia o bot após reinicializações da VPS e limita a rotação dos logs. Não é necessário abrir porta no firewall: a conexão com o Discord é de saída.
 
+## NexCloud Bot Hosting (Pterodactyl)
+
+O repositório também pode ser executado pelo painel de hospedagem de bots, sem editar o `Startup Command`:
+
+1. Use o **Git Deploy** com `https://github.com/osnotr-max/honeylua-node-public.git` e branch `main`. Como o repositório é público, deixe Git Username e Git Access Token vazios.
+2. Em **Startup Settings**, deixe **User Uploaded Files** como `False` e **Auto Update** como `True`.
+3. Em **Main File**, informe `src/index.js`. O comando gerado pelo painel usa esse campo para localizar o ponto de entrada.
+4. No **File Manager**, crie `.env` na raiz do servidor e copie as variáveis de `.env.example`, preenchendo os valores reais. O `dotenv` carrega o arquivo ao iniciar; não publique o `.env` no GitHub.
+5. Inicie o servidor e acompanhe o Console. O painel executa `npm install` a partir do `package.json`; não é necessário preencher Additional Node Packages.
+
+O bot suporta a imagem Node.js 20 exibida no painel NexCloud. Não altere o Docker Image nem o Startup Command.
+
 ## Atualizar e operar
 
 ```bash
@@ -67,7 +79,7 @@ docker compose down
 
 ## Rodar sem Docker (opcional)
 
-Requer Node.js **22.4 ou superior** (recomendado: 24):
+Requer Node.js **20 ou superior** (recomendado: 24):
 
 ```bash
 cp .env.example .env

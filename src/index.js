@@ -1,16 +1,19 @@
+import "dotenv/config";
 import { readFile, writeFile } from "node:fs/promises";
+import WebSocket from "ws";
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /*
  * Low-memory Honeylua Discord support service for Node.js.
  *
- * This intentionally uses only Node.js built-ins plus web-standard globals:
+ * This uses Node.js built-ins plus two small compatibility packages:
  *   - native fetch for Discord REST
- *   - native WebSocket for the Gateway
+ *   - ws for the Gateway WebSocket, including Node.js 20
+ *   - dotenv for loading panel-managed .env files
  *   - Map/Set for small, bounded application state
  *   - node:fs/promises for the tiny ranking file
  *
  * Keeping the protocol layer here avoids loading a large Discord client
- * framework and its message/guild object cache on a 256 MB server.
+ * framework and its message/guild object cache on a small bot-hosting plan.
  */
 const API = "https://discord.com/api/v10";
 const GATEWAY = "wss://gateway.discord.gg/?v=10&encoding=json";
@@ -2376,28 +2379,29 @@ function connectGateway() {
         : GATEWAY;
     const socket = new WebSocket(url);
     state.gateway = socket;
-    socket.onopen = () => {
+    socket.on("open", () => {
         log("gateway socket opened");
-    };
-    socket.onmessage = (event) => {
+    });
+    socket.on("message", (data) => {
         try {
-            void handleGateway(JSON.parse(String(event.data))).catch((error) => log("gateway payload handling failed", error));
+            const message = Buffer.isBuffer(data) ? data.toString("utf8") : Buffer.from(data).toString("utf8");
+            void handleGateway(JSON.parse(message)).catch((error) => log("gateway payload handling failed", error));
         }
         catch (error) {
             log("invalid gateway payload", error);
         }
-    };
-    socket.onerror = (event) => log("gateway socket error", event);
-    socket.onclose = (event) => {
+    });
+    socket.on("error", (error) => log("gateway socket error", error));
+    socket.on("close", (code) => {
         stopHeartbeat();
         if (state.gateway === socket)
             state.gateway = null;
-        if (FATAL_GATEWAY_CODES.has(event.code)) {
-            log(`gateway closed with fatal code ${event.code}; automatic reconnect disabled`);
+        if (FATAL_GATEWAY_CODES.has(code)) {
+            log(`gateway closed with fatal code ${code}; automatic reconnect disabled`);
             return;
         }
         scheduleReconnect();
-    };
+    });
 }
 async function handleGateway(payload) {
     if (payload.op === 10) {
