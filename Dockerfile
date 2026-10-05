@@ -2,6 +2,7 @@ FROM node:24-alpine
 
 WORKDIR /app
 COPY --chown=node:node package.json ./
+RUN npm install --omit=dev --no-audit --no-fund
 COPY --chown=node:node src ./src
 COPY --chown=node:node staff-ranking.json ./staff-ranking.json
 
